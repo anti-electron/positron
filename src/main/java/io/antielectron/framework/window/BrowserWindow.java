@@ -11,6 +11,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -41,7 +42,7 @@ public class BrowserWindow implements IRectResizable, IMovable {
         this.parent = parent;
         this.engine = new SubEngine(this);
         this.stage = new Stage();
-        stage.setScene(new Scene(engine.getWebView()));
+        stage.setScene(new Scene(new StackPane(engine.getWebView())));
         this.destructFunction = destructFunction;
         initEventStreams();
     }

@@ -1,5 +1,6 @@
 package io.antielectron.framework.connection;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -14,7 +15,9 @@ public class ClasspathStreamHandler extends URLStreamHandler {
     @Override
     protected URLConnection openConnection(URL u) throws IOException {
         URL resUrl = getClass().getClassLoader().getResource(u.getHost() + u.getPath());
-        return resUrl != null ? resUrl.openConnection() : null;
+        if (resUrl == null)
+            throw new FileNotFoundException("No such file: " + u.getHost() + u.getPath());
+        return resUrl.openConnection();
     }
 
 }

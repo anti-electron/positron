@@ -1,20 +1,18 @@
 package io.antielectron.framework.app;
 
-import com.sun.webkit.network.URLs;
 import io.antielectron.framework.connection.PositronStreamHandlerFactory;
 import io.antielectron.framework.event.IntCancellable;
-import io.antielectron.framework.window.BrowserWindow;
 import io.antielectron.framework.event.NullaryEventStream;
 import io.antielectron.framework.event.UnaryEventStream;
+import io.antielectron.framework.window.BrowserWindow;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLStreamHandler;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**

@@ -13,7 +13,7 @@ public class PositronStreamHandlerFactory implements URLStreamHandlerFactory {
     public URLStreamHandler createURLStreamHandler(String protocol) {
         if (protocol.equals("cp"))
             return new ClasspathStreamHandler();
-        throw new UnsupportedOperationException();
+        return null;
     }
 
 }
