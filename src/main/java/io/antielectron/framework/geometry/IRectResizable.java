@@ -6,16 +6,10 @@ package io.antielectron.framework.geometry;
  */
 public interface IRectResizable extends IRectDimensional {
 
-    IRectResizable setWidth(int width);
+    IRectResizable setSize(int width, int height);
 
-    IRectResizable setHeight(int height);
+    IRectResizable setMinSize(int width, int height);
 
-    IRectResizable setMinWidth(int width);
-
-    IRectResizable setMaxWidth(int width);
-
-    IRectResizable setMinHeight(int height);
-
-    IRectResizable setMaxHeight(int height);
+    IRectResizable setMaxSize(int width, int height);
 
 }

@@ -6,8 +6,6 @@ package io.antielectron.framework.geometry;
  */
 public interface IMovable extends IPositional {
 
-    IMovable setX(int x);
-
-    IMovable setY(int y);
+    IMovable setPosition(int x, int y);
 
 }

@@ -57,4 +57,20 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>TeamDev Repo</id>
+            <url>http://maven.teamdev.com/repository/products</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.teamdev.jxbrowser</groupId>
+            <artifactId>jxbrowser-cross-platform</artifactId>
+            <version>6.8</version>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
 </project>

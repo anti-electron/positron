@@ -1,11 +1,11 @@
 package io.antielectron.framework.window;
 
-import javafx.scene.web.WebView;
-import javafx.stage.Stage;
-import org.w3c.dom.Document;
+import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.JSValue;
+import com.teamdev.jxbrowser.chromium.events.*;
+import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
 import java.util.Hashtable;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * TODO Document
@@ -15,31 +15,63 @@ public class SubEngine {
 
     private final BrowserWindow bw;
     private final Hashtable<String, String> headers = new Hashtable<>();
-    private WebView webView;
-    private Stage stage;
-    private AtomicBoolean loading = new AtomicBoolean(false);
+    private Browser browser;
+    private BrowserView view;
     private boolean active = true;
 
     public SubEngine(BrowserWindow bw) {
         this.bw = bw;
-        this.webView = new WebView();
+        this.browser = new Browser();
+        this.view = new BrowserView(browser);
+    }
+
+    void initListeners() {
+        browser.addConsoleListener(e -> bw.onConsoleMessage.accept(e.getMessage()));
+        browser.addLoadListener(new LoadListener() {
+            @Override
+            public void onStartLoadingFrame(StartLoadingEvent startLoadingEvent) {
+                // NO-OP
+            }
+
+            @Override
+            public void onProvisionalLoadingFrame(ProvisionalLoadingEvent provisionalLoadingEvent) {
+                // NO-OP
+            }
+
+            @Override
+            public void onFinishLoadingFrame(FinishLoadingEvent finishLoadingEvent) {
+                bw.onPageLoad.accept();
+            }
+
+            @Override
+            public void onFailLoadingFrame(FailLoadingEvent failLoadingEvent) {
+                // NO-OP
+            }
+
+            @Override
+            public void onDocumentLoadedInFrame(FrameLoadEvent frameLoadEvent) {
+                // NO-OP
+            }
+
+            @Override
+            public void onDocumentLoadedInMainFrame(LoadEvent loadEvent) {
+                // NO-OP
+            }
+        });
+        browser.addTitleListener(e -> bw.onPageTitleUpdate.accept(e.getTitle()));
     }
 
     public void cleanUp() {
         active = false;
+        browser.dispose();
     }
 
     public boolean isActive() {
         return active;
     }
 
-    public WebView getWebView() {
-        return webView;
-    }
-
-    public SubEngine setUserAgent(String agent) {
-        webView.getEngine().setUserAgent(agent);
-        return this;
+    public BrowserView getBrowserView() {
+        return view;
     }
 
     public SubEngine addHeader(String key, String value) {
@@ -53,51 +85,43 @@ public class SubEngine {
     }
 
     public void loadUrl(String url) {
-        webView.getEngine().load(url);
+        browser.loadURL(url);
     }
 
     public void loadContent(String content) {
-        webView.getEngine().loadContent(content);
-    }
-
-    public void loadContent(String content, String contentType) {
-        webView.getEngine().loadContent(content, contentType);
+        browser.loadHTML(content);
     }
 
     public String getUrl() {
-        return webView.getEngine().getLocation();
+        return browser.getURL();
     }
 
     public String getTitle() {
-        return webView.getEngine().getTitle();
+        return browser.getTitle();
     }
 
     public boolean isLoading() {
-        return loading.get();
+        return browser.isLoading();
     }
 
     public void reload() {
-        webView.getEngine().reload();
+        browser.reload();
     }
 
     public void goBack() {
-        webView.getEngine().getHistory().go(-1);
+        browser.goBack();
     }
 
     public void goForward() {
-        webView.getEngine().getHistory().go(1);
+        browser.goForward();
     }
 
     public void insertCss(String css) {
-        webView.getEngine().getDocument().createElement("style").setTextContent(css);
+        browser.getDocument().createElement("style").setTextContent(css);
     }
 
-    public Object executeJs(String code) {
-        return webView.getEngine().executeScript(code);
-    }
-
-    public Document getDocument() {
-        return webView.getEngine().getDocument();
+    public JSValue executeJs(String code) {
+        return browser.executeJavaScriptAndReturnValue(code);
     }
 
 }

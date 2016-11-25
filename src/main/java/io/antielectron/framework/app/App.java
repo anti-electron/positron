@@ -1,15 +1,15 @@
 package io.antielectron.framework.app;
 
-import io.antielectron.framework.connection.PositronStreamHandlerFactory;
 import io.antielectron.framework.event.IntCancellable;
 import io.antielectron.framework.event.NullaryEventStream;
 import io.antielectron.framework.event.UnaryEventStream;
 import io.antielectron.framework.window.BrowserWindow;
+import io.antielectron.framework.window.ScreenInfo;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
-import java.net.URL;
+import java.awt.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,18 +41,18 @@ public class App extends Application {
     public void start(Stage primaryStage) {
         Platform.setImplicitExit(false);
         primaryStage.close();
-        URL.setURLStreamHandlerFactory(new PositronStreamHandlerFactory());
         mainFunc.accept(this, argArray);
     }
 
     private final Set<BrowserWindow> windows = new HashSet<>();
+    private final ScreenInfo screenInfo = new ScreenInfo();
 
     public final UnaryEventStream<BrowserWindow> onWindowClosed = new UnaryEventStream<>();
     public final NullaryEventStream onAllWindowsClosed = new NullaryEventStream();
     public final UnaryEventStream<IntCancellable> onQuit = new UnaryEventStream<>();
 
-    public BrowserWindow createWindow() {
-        BrowserWindow window = new BrowserWindow(this, this::destroyWindow);
+    public BrowserWindow createWindow(int width, int height) {
+        BrowserWindow window = new BrowserWindow(this, new Dimension(width, height), this::destroyWindow);
         windows.add(window);
         return window;
     }
@@ -70,6 +70,10 @@ public class App extends Application {
 
     public Set<BrowserWindow> getAllWindows() {
         return Collections.unmodifiableSet(windows);
+    }
+
+    public ScreenInfo getScreen() {
+        return screenInfo;
     }
 
     public void enableImplicitQuit() {

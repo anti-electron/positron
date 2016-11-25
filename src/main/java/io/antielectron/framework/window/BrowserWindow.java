@@ -1,21 +1,17 @@
 package io.antielectron.framework.window;
 
-import io.antielectron.framework.event.*;
-import io.antielectron.framework.geometry.IPositional;
 import io.antielectron.framework.app.App;
+import io.antielectron.framework.event.ClickEvent;
+import io.antielectron.framework.event.ICancellable;
+import io.antielectron.framework.event.NullaryEventStream;
+import io.antielectron.framework.event.UnaryEventStream;
 import io.antielectron.framework.geometry.IMovable;
+import io.antielectron.framework.geometry.IPositional;
 import io.antielectron.framework.geometry.IRectDimensional;
 import io.antielectron.framework.geometry.IRectResizable;
-import javafx.event.EventHandler;
-import javafx.scene.Scene;
-import javafx.scene.image.Image;
-import javafx.scene.input.ContextMenuEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.function.Consumer;
 
 /**
@@ -26,11 +22,13 @@ public class BrowserWindow implements IRectResizable, IMovable {
 
     private final App parent;
     private final SubEngine engine;
-    private final Stage stage;
+    private final JFrame window;
     private final Consumer<BrowserWindow> destructFunction;
+    private PositronSwingListener swingListener;
 
     public final NullaryEventStream onPageLoad = new NullaryEventStream();
-    // public final UnaryEventStream<String> onPageTitleUpdate = new UnaryEventStream<>(); TODO Implement
+    public final UnaryEventStream<String> onPageTitleUpdate = new UnaryEventStream<>();
+    public final UnaryEventStream<String> onConsoleMessage = new UnaryEventStream<>();
     public final UnaryEventStream<ICancellable> onCloseButton = new UnaryEventStream<>();
     public final NullaryEventStream onFocus = new NullaryEventStream();
     public final NullaryEventStream onUnfocus = new NullaryEventStream();
@@ -38,39 +36,24 @@ public class BrowserWindow implements IRectResizable, IMovable {
     public final UnaryEventStream<IPositional> onMove = new UnaryEventStream<>();
     public final UnaryEventStream<ClickEvent> onContextMenu = new UnaryEventStream<>();
 
-    public BrowserWindow(App parent, Consumer<BrowserWindow> destructFunction) {
+    public BrowserWindow(App parent, Dimension size, Consumer<BrowserWindow> destructFunction) {
         this.parent = parent;
         this.engine = new SubEngine(this);
-        this.stage = new Stage();
-        stage.setScene(new Scene(new StackPane(engine.getWebView())));
+        this.window = new JFrame();
+        window.getContentPane().add(engine.getBrowserView());
+        window.setSize(size);
         this.destructFunction = destructFunction;
         initEventStreams();
     }
 
     private void initEventStreams() {
-        stage.setOnCloseRequest(e -> {
-            ICancellable event = new DefaultCancellable();
-            onCloseButton.accept(event);
-            if (!event.isCancelled())
-                close();
-        });
-        stage.focusedProperty().addListener((var, oV, nV) -> {
-            if (nV)
-                onFocus.accept();
-            else
-                onUnfocus.accept();
-        });
-        stage.widthProperty().addListener((var, oV, nV) -> onResize.accept(this));
-        stage.heightProperty().addListener((var, oV, nV) -> onResize.accept(this));
-        stage.xProperty().addListener((var, oV, nV) -> onMove.accept(this));
-        stage.yProperty().addListener((var, oV, nV) -> onMove.accept(this));
-        EventHandler<? super ContextMenuEvent> oldCtxMenuHandler = stage.getScene().getOnContextMenuRequested();
-        stage.getScene().setOnContextMenuRequested(e -> {
-            ClickEvent event = new ClickEvent((int)e.getX(), (int)e.getY(), MouseButton.SECONDARY);
-            onContextMenu.accept(event);
-            if (!event.isCancelled())
-                oldCtxMenuHandler.handle(e);
-        });
+        window.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        swingListener = new PositronSwingListener(this);
+        window.addWindowListener(swingListener);
+        window.addFocusListener(swingListener);
+        window.addComponentListener(swingListener);
+        window.addMouseListener(swingListener);
+        engine.initListeners();
     }
 
     public SubEngine getEngine() {
@@ -79,117 +62,89 @@ public class BrowserWindow implements IRectResizable, IMovable {
 
     @Override
     public int getX() {
-        return (int)stage.getX();
+        return window.getX();
     }
 
     @Override
     public int getY() {
-        return (int)stage.getY();
+        return window.getY();
     }
 
     @Override
     public int getWidth() {
-        return (int)stage.getWidth();
+        return window.getWidth();
     }
 
     @Override
     public int getHeight() {
-        return (int)stage.getHeight();
+        return window.getHeight();
     }
 
     @Override
-    public BrowserWindow setX(int x) {
-        stage.setX(x);
+    public BrowserWindow setPosition(int x, int y) {
+        window.setLocation(x, y);
         return this;
     }
 
     @Override
-    public BrowserWindow setY(int y) {
-        stage.setY(y);
+    public BrowserWindow setSize(int width, int height) {
+        window.setSize(width, height);
         return this;
     }
 
     @Override
-    public BrowserWindow setWidth(int width) {
-        stage.setWidth(width);
+    public BrowserWindow setMinSize(int width, int height) {
+        window.setMinimumSize(new Dimension(width, height));
         return this;
     }
 
     @Override
-    public BrowserWindow setHeight(int height) {
-        stage.setHeight(height);
-        return this;
-    }
-
-    @Override
-    public BrowserWindow setMinWidth(int width) {
-        stage.setMinWidth(width);
-        return this;
-    }
-
-    @Override
-    public BrowserWindow setMaxWidth(int width) {
-        stage.setMaxWidth(width);
-        return this;
-    }
-
-    @Override
-    public BrowserWindow setMinHeight(int height) {
-        stage.setMinHeight(height);
-        return this;
-    }
-
-    @Override
-    public BrowserWindow setMaxHeight(int height) {
-        stage.setMaxHeight(height);
+    public BrowserWindow setMaxSize(int width, int height) {
+        window.setMaximumSize(new Dimension(width, height));
         return this;
     }
 
     public BrowserWindow setResizable(boolean resizable) {
-        stage.setResizable(resizable);
+        window.setResizable(resizable);
         return this;
     }
 
     public BrowserWindow setAlwaysOnTop(boolean alwaysOnTop) {
-        stage.setAlwaysOnTop(alwaysOnTop);
+        window.setAlwaysOnTop(alwaysOnTop);
         return this;
     }
 
     public BrowserWindow setTitle(String title) {
-        stage.setTitle(title);
+        window.setTitle(title);
         return this;
     }
 
-    public BrowserWindow setIcon(Image... icon) {
-        stage.getIcons().clear();
-        stage.getIcons().addAll(icon);
+    public BrowserWindow setIcon(Image icon) {
+        window.setIconImage(icon);
         return this;
     }
 
     public BrowserWindow setBackgroundColour(Color colour) {
-        stage.getScene().setFill(colour);
+        window.setBackground(colour);
         return this;
     }
 
     public BrowserWindow setFrameless(boolean frameless) {
-        stage.initStyle(frameless ? StageStyle.UNDECORATED : StageStyle.DECORATED);
+        window.setUndecorated(frameless);
         return this;
     }
 
     public boolean isFocused() {
-        return stage.isFocused();
+        return window.isFocused();
     }
 
     public BrowserWindow focus() {
-        stage.requestFocus();
+        window.requestFocus();
         return this;
     }
 
     public BrowserWindow setVisible(boolean visible) {
-        if (visible)
-            stage.show();
-        else
-            stage.hide();
+        window.setVisible(visible);
         return this;
     }
 
@@ -199,7 +154,7 @@ public class BrowserWindow implements IRectResizable, IMovable {
     }
 
     public void close() {
-        stage.close();
+        window.dispose();
         engine.cleanUp();
         destructFunction.accept(this);
     }
@@ -209,23 +164,23 @@ public class BrowserWindow implements IRectResizable, IMovable {
     }
 
     public void minimize() {
-        stage.setIconified(true);
+        window.setState(Frame.NORMAL);
     }
 
     public void restore() {
-        stage.setIconified(false);
+        window.setState(Frame.ICONIFIED);
     }
 
     public void maximize() {
-        stage.setMaximized(true);
+        window.setState(Frame.MAXIMIZED_BOTH);
     }
 
     public void unmaximize() {
-        stage.setMaximized(false);
+        window.setState(Frame.NORMAL);
     }
 
     public void center() {
-        stage.centerOnScreen();
+        window.setLocationRelativeTo(null);
     }
-    
+
 }

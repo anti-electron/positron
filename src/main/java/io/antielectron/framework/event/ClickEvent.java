@@ -11,9 +11,9 @@ public class ClickEvent extends DefaultCancellable implements IPositional {
 
     private final int x;
     private final int y;
-    private final MouseButton button;
+    private final int button;
 
-    public ClickEvent(int x, int y, MouseButton button) {
+    public ClickEvent(int x, int y, int button) {
         this.x = x;
         this.y = y;
         this.button = button;
@@ -29,7 +29,7 @@ public class ClickEvent extends DefaultCancellable implements IPositional {
         return y;
     }
 
-    public MouseButton getButton() {
+    public int getButton() {
         return button;
     }
 
