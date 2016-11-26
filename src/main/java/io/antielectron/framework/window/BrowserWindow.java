@@ -40,6 +40,7 @@ public class BrowserWindow implements IRectResizable, IMovable {
         this.parent = parent;
         this.engine = new SubEngine(this);
         this.window = new JFrame();
+        window.setLayout(new CardLayout(0, 0));
         window.getContentPane().add(engine.getBrowserView());
         window.setSize(size);
         this.destructFunction = destructFunction;
