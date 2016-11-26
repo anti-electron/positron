@@ -4,6 +4,7 @@ import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.JSValue;
 import com.teamdev.jxbrowser.chromium.events.*;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+import io.antielectron.framework.js.JSGlobals;
 
 import java.util.Hashtable;
 
@@ -15,6 +16,7 @@ public class SubEngine {
 
     private final BrowserWindow bw;
     private final Hashtable<String, String> headers = new Hashtable<>();
+    private final JSGlobals engineGlobals = new JSGlobals(), pageGlobals = new JSGlobals();
     private Browser browser;
     private BrowserView view;
     private boolean active = true;
@@ -29,36 +31,51 @@ public class SubEngine {
         browser.addConsoleListener(e -> bw.onConsoleMessage.accept(e.getMessage()));
         browser.addLoadListener(new LoadListener() {
             @Override
-            public void onStartLoadingFrame(StartLoadingEvent startLoadingEvent) {
+            public void onStartLoadingFrame(StartLoadingEvent event) {
                 // NO-OP
             }
 
             @Override
-            public void onProvisionalLoadingFrame(ProvisionalLoadingEvent provisionalLoadingEvent) {
+            public void onProvisionalLoadingFrame(ProvisionalLoadingEvent event) {
                 // NO-OP
             }
 
             @Override
-            public void onFinishLoadingFrame(FinishLoadingEvent finishLoadingEvent) {
-                bw.onPageLoad.accept();
+            public void onFinishLoadingFrame(FinishLoadingEvent event) {
+                pageGlobals.clear();
+                SubEngine.this.insertCss(bw.getParentApp().getGlobalCss());
+                bw.onPageLoad.accept(event.getValidatedURL());
             }
 
             @Override
-            public void onFailLoadingFrame(FailLoadingEvent failLoadingEvent) {
+            public void onFailLoadingFrame(FailLoadingEvent event) {
                 // NO-OP
             }
 
             @Override
-            public void onDocumentLoadedInFrame(FrameLoadEvent frameLoadEvent) {
+            public void onDocumentLoadedInFrame(FrameLoadEvent event) {
                 // NO-OP
             }
 
             @Override
-            public void onDocumentLoadedInMainFrame(LoadEvent loadEvent) {
+            public void onDocumentLoadedInMainFrame(LoadEvent event) {
                 // NO-OP
             }
         });
         browser.addTitleListener(e -> bw.onPageTitleUpdate.accept(e.getTitle()));
+        browser.addScriptContextListener(new ScriptContextListener() {
+            @Override
+            public void onScriptContextCreated(ScriptContextEvent event) {
+                bw.getParentApp().getDefaultGlobals().bind(SubEngine.this::isActive, event.getBrowser());
+                engineGlobals.bind(SubEngine.this::isActive, event.getBrowser());
+                pageGlobals.bind(SubEngine.this::isActive, event.getBrowser());
+            }
+
+            @Override
+            public void onScriptContextDestroyed(ScriptContextEvent event) {
+                // NO-OP
+            }
+        });
     }
 
     public void cleanUp() {
@@ -122,6 +139,14 @@ public class SubEngine {
 
     public JSValue executeJs(String code) {
         return browser.executeJavaScriptAndReturnValue(code);
+    }
+
+    public JSGlobals getEngineGlobals() {
+        return engineGlobals;
+    }
+
+    public JSGlobals getPageGlobals() {
+        return pageGlobals;
     }
 
 }

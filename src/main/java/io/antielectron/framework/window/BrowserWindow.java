@@ -26,7 +26,7 @@ public class BrowserWindow implements IRectResizable, IMovable {
     private final Consumer<BrowserWindow> destructFunction;
     private PositronSwingListener swingListener;
 
-    public final NullaryEventStream onPageLoad = new NullaryEventStream();
+    public final UnaryEventStream<String> onPageLoad = new UnaryEventStream<>();
     public final UnaryEventStream<String> onPageTitleUpdate = new UnaryEventStream<>();
     public final UnaryEventStream<String> onConsoleMessage = new UnaryEventStream<>();
     public final UnaryEventStream<ICancellable> onCloseButton = new UnaryEventStream<>();
@@ -54,6 +54,10 @@ public class BrowserWindow implements IRectResizable, IMovable {
         window.addComponentListener(swingListener);
         window.addMouseListener(swingListener);
         engine.initListeners();
+    }
+
+    public App getParentApp() {
+        return parent;
     }
 
     public SubEngine getEngine() {

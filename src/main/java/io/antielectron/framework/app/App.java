@@ -3,13 +3,16 @@ package io.antielectron.framework.app;
 import io.antielectron.framework.event.IntCancellable;
 import io.antielectron.framework.event.NullaryEventStream;
 import io.antielectron.framework.event.UnaryEventStream;
+import io.antielectron.framework.js.JSGlobals;
 import io.antielectron.framework.window.BrowserWindow;
 import io.antielectron.framework.window.ScreenInfo;
+import io.github.phantamanta44.nomreflect.Reflect;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
 import java.awt.*;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,20 +39,33 @@ public class App extends Application {
         }
     }
 
+    private final Set<BrowserWindow> windows = new HashSet<>();
+    private final ScreenInfo screenInfo = new ScreenInfo();
+    private final JSGlobals defaultGlobals = new JSGlobals(), fromDeps = new JSGlobals();
+    private String globalCss;
+
+    public final UnaryEventStream<BrowserWindow> onWindowClosed = new UnaryEventStream<>();
+    public final NullaryEventStream onAllWindowsClosed = new NullaryEventStream();
+    public final UnaryEventStream<IntCancellable> onQuit = new UnaryEventStream<>();
+
     @Override
     @SuppressWarnings("unchecked")
     public void start(Stage primaryStage) {
         Platform.setImplicitExit(false);
         primaryStage.close();
+        StringWriter css = new StringWriter();
+        Reflect.types("io.antielectron.providers").extending(IDependencyProvider.class).find().forEach(c -> {
+            try {
+                IDependencyProvider provider = (IDependencyProvider)c.newInstance();
+                provider.injectJs(fromDeps);
+                provider.injectCss(css);
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        });
+        globalCss = css.toString();
         mainFunc.accept(this, argArray);
     }
-
-    private final Set<BrowserWindow> windows = new HashSet<>();
-    private final ScreenInfo screenInfo = new ScreenInfo();
-
-    public final UnaryEventStream<BrowserWindow> onWindowClosed = new UnaryEventStream<>();
-    public final NullaryEventStream onAllWindowsClosed = new NullaryEventStream();
-    public final UnaryEventStream<IntCancellable> onQuit = new UnaryEventStream<>();
 
     public BrowserWindow createWindow(int width, int height) {
         BrowserWindow window = new BrowserWindow(this, new Dimension(width, height), this::destroyWindow);
@@ -74,6 +90,14 @@ public class App extends Application {
 
     public ScreenInfo getScreen() {
         return screenInfo;
+    }
+
+    public JSGlobals getDefaultGlobals() {
+        return defaultGlobals;
+    }
+
+    public String getGlobalCss() {
+        return globalCss;
     }
 
     public void enableImplicitQuit() {
