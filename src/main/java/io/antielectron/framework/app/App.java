@@ -83,8 +83,8 @@ public class App extends Application {
         Reflect.types("io.antielectron.providers").extending(IDependencyProvider.class).find().forEach(c -> {
             try {
                 IDependencyProvider provider = (IDependencyProvider)c.newInstance();
-                provider.injectJs(fromDeps);
-                provider.injectCss(css);
+                provider.injectJs(fromDeps, log);
+                provider.injectCss(css, log);
             } catch (InstantiationException | IllegalAccessException e) {
                 log.warn("Failed to load dep provider: " + c.getName(), e);
             }

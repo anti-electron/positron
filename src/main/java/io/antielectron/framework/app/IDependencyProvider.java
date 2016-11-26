@@ -1,6 +1,7 @@
 package io.antielectron.framework.app;
 
 import io.antielectron.framework.js.JSGlobals;
+import org.slf4j.Logger;
 
 import java.io.Writer;
 
@@ -10,8 +11,8 @@ import java.io.Writer;
  */
 public interface IDependencyProvider {
 
-    void injectJs(JSGlobals globals);
+    void injectJs(JSGlobals globals, Logger log);
 
-    void injectCss(Writer css);
+    void injectCss(Writer css, Logger log);
 
 }
