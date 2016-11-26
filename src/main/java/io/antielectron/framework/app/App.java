@@ -1,5 +1,6 @@
 package io.antielectron.framework.app;
 
+import com.teamdev.jxbrowser.chromium.internal.FileUtil;
 import io.antielectron.framework.event.IntCancellable;
 import io.antielectron.framework.event.NullaryEventStream;
 import io.antielectron.framework.event.UnaryEventStream;
@@ -12,7 +13,7 @@ import javafx.application.Platform;
 import javafx.stage.Stage;
 
 import java.awt.*;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class App extends Application {
         }
     }
 
+    private final File webContentDir = new File("temp_webcontent"); // TODO Make this configurable
     private final Set<BrowserWindow> windows = new HashSet<>();
     private final ScreenInfo screenInfo = new ScreenInfo();
     private final JSGlobals defaultGlobals = new JSGlobals(), fromDeps = new JSGlobals();
@@ -53,6 +55,25 @@ public class App extends Application {
     public void start(Stage primaryStage) {
         Platform.setImplicitExit(false);
         primaryStage.close();
+        try (InputStream wcDir = App.class.getClassLoader().getResourceAsStream("WebContent")) {
+            BufferedReader dirReader = new BufferedReader(new InputStreamReader(wcDir));
+            String fileName;
+            while ((fileName = dirReader.readLine()) != null) {
+                File outFile = new File(webContentDir, fileName);
+                outFile.getParentFile().mkdirs();
+                try (
+                    InputStream in = App.class.getClassLoader().getResourceAsStream("WebContent/" + fileName);
+                    OutputStream out = new FileOutputStream(outFile)
+                ) {
+                    int data;
+                    while ((data = in.read()) != -1)
+                        out.write(data);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            Platform.exit();
+        }
         StringWriter css = new StringWriter();
         Reflect.types("io.antielectron.providers").extending(IDependencyProvider.class).find().forEach(c -> {
             try {
@@ -88,6 +109,10 @@ public class App extends Application {
         return Collections.unmodifiableSet(windows);
     }
 
+    public File getWebContentDir() {
+        return webContentDir;
+    }
+
     public ScreenInfo getScreen() {
         return screenInfo;
     }
@@ -108,7 +133,12 @@ public class App extends Application {
         IntCancellable event = new IntCancellable(code);
         onQuit.accept(event);
         if (!event.isCancelled())
-            Runtime.getRuntime().exit(code);
+            forceExit(code);
+    }
+
+    public void forceExit(int code) {
+        FileUtil.deleteDir(webContentDir);
+        Runtime.getRuntime().exit(code);
     }
 
 }

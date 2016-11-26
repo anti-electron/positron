@@ -2,6 +2,7 @@ package io.antielectron.framework.window;
 
 import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.JSValue;
+import com.teamdev.jxbrowser.chromium.LoadHTMLParams;
 import com.teamdev.jxbrowser.chromium.events.*;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import io.antielectron.framework.js.JSGlobals;
@@ -102,11 +103,18 @@ public class SubEngine {
     }
 
     public void loadUrl(String url) {
-        browser.loadURL(url);
+        if (url.toLowerCase().startsWith("pos://"))
+            browser.loadURL("file://" + bw.getParentApp().getWebContentDir().getAbsolutePath() + "/" + url.substring(6));
+        else
+            browser.loadURL(url);
     }
 
     public void loadContent(String content) {
         browser.loadHTML(content);
+    }
+
+    public void loadContent(String content, String url) {
+        browser.loadHTML(new LoadHTMLParams(content, "UTF-8", url));
     }
 
     public String getUrl() {
