@@ -21,9 +21,13 @@ public class JSGlobals {
         boundBrowsers.entrySet().removeIf(e -> {
             if (!e.getValue().getAsBoolean())
                 return true;
-            globalsOf(e.getKey()).setProperty(name, value);
+            inject(e.getKey(), name, value);
             return false;
         });
+    }
+
+    public void putExecution(String code) {
+        put(Integer.toString(code.hashCode()), new ScriptExecution(code));
     }
 
     public void clear() {
@@ -37,16 +41,33 @@ public class JSGlobals {
     public void bind(BooleanSupplier activeCheck, Browser browser) {
         if (activeCheck.getAsBoolean()) {
             boundBrowsers.put(browser, activeCheck);
-            injectTo(globalsOf(browser));
+            injectTo(browser);
         }
     }
 
-    public void injectTo(JSObject object) {
-        globals.forEach(object::setProperty);
+    public void injectTo(Browser browser) {
+        globals.forEach((k, v) -> inject(browser, k, v));
+    }
+
+    private void inject(Browser browser, String key, Object value) {
+        if (value instanceof ScriptExecution)
+            browser.executeJavaScript(((ScriptExecution)value).script);
+        else
+            globalsOf(browser).setProperty(key, value);
     }
 
     private static JSObject globalsOf(Browser browser) {
         return browser.executeJavaScriptAndReturnValue("window").asObject();
+    }
+
+    private static class ScriptExecution {
+
+        final String script;
+
+        ScriptExecution(String script) {
+            this.script = script;
+        }
+
     }
 
 }
