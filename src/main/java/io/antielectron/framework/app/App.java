@@ -11,6 +11,8 @@ import io.github.phantamanta44.nomreflect.Reflect;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
@@ -25,6 +27,7 @@ import java.util.function.BiConsumer;
  */
 public class App extends Application {
 
+    public static final Logger log = LoggerFactory.getLogger("Positron");
     private static boolean initialized = false;
     private static BiConsumer<App, String[]> mainFunc;
     private static String[] argArray;
@@ -56,22 +59,24 @@ public class App extends Application {
         Platform.setImplicitExit(false);
         primaryStage.close();
         try (InputStream wcDir = App.class.getClassLoader().getResourceAsStream("WebContent")) {
-            BufferedReader dirReader = new BufferedReader(new InputStreamReader(wcDir));
-            String fileName;
-            while ((fileName = dirReader.readLine()) != null) {
-                File outFile = new File(webContentDir, fileName);
-                outFile.getParentFile().mkdirs();
-                try (
-                    InputStream in = App.class.getClassLoader().getResourceAsStream("WebContent/" + fileName);
-                    OutputStream out = new FileOutputStream(outFile)
-                ) {
-                    int data;
-                    while ((data = in.read()) != -1)
-                        out.write(data);
+            if (wcDir != null) {
+                BufferedReader dirReader = new BufferedReader(new InputStreamReader(wcDir));
+                String fileName;
+                while ((fileName = dirReader.readLine()) != null) {
+                    File outFile = new File(webContentDir, fileName);
+                    outFile.getParentFile().mkdirs();
+                    try (
+                            InputStream in = App.class.getClassLoader().getResourceAsStream("WebContent/" + fileName);
+                            OutputStream out = new FileOutputStream(outFile)
+                    ) {
+                        int data;
+                        while ((data = in.read()) != -1)
+                            out.write(data);
+                    }
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to extract web content!", e);
             Platform.exit();
         }
         StringWriter css = new StringWriter();
@@ -81,7 +86,7 @@ public class App extends Application {
                 provider.injectJs(fromDeps);
                 provider.injectCss(css);
             } catch (InstantiationException | IllegalAccessException e) {
-                e.printStackTrace();
+                log.warn("Failed to load dep provider: " + c.getName(), e);
             }
         });
         globalCss = css.toString();
