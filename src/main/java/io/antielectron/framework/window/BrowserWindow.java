@@ -12,6 +12,7 @@ import io.antielectron.framework.geometry.IRectResizable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
@@ -21,6 +22,9 @@ import java.util.function.Consumer;
  * @author Evan Geng
  */
 public class BrowserWindow implements IRectResizable, IMovable {
+
+    private static final int CLOSE_MOD_RESULT_MASK = InputEvent.ALT_DOWN_MASK;
+    private static final int CLOSE_MOD_FILTER_MASK = CLOSE_MOD_RESULT_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
 
     private final App parent;
     private final SubEngine engine;
@@ -59,6 +63,10 @@ public class BrowserWindow implements IRectResizable, IMovable {
         window.addWindowListener(swingListener);
         window.addFocusListener(swingListener);
         window.addComponentListener(swingListener);
+        onKeyDown.always(e -> {
+            if (e.getKeyCode() == KeyEvent.VK_F4 && (e.getModifiersEx() & CLOSE_MOD_FILTER_MASK) == CLOSE_MOD_RESULT_MASK)
+                close();
+        });
         engine.initListeners(swingListener);
     }
 

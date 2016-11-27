@@ -91,6 +91,7 @@ public class SubEngine {
             debug = bw.getParentApp().createWindow((int)(0.5F * size.getWidth()), (int)(0.5F * size.getHeight()));
             debug.getEngine().loadUrl(browser.getRemoteDebuggingURL());
             debug.setTitle("Developer Tools");
+            debug.setPosition(bw.getX(), bw.getY());
             debug.setVisible(true);
         } else {
             debug.setVisible(true);
