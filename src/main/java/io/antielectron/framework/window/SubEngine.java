@@ -5,6 +5,7 @@ import com.teamdev.jxbrowser.chromium.JSValue;
 import com.teamdev.jxbrowser.chromium.LoadHTMLParams;
 import com.teamdev.jxbrowser.chromium.events.*;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+import io.antielectron.framework.geometry.IRectDimensional;
 import io.antielectron.framework.js.JSGlobals;
 
 import java.util.Hashtable;
@@ -20,6 +21,7 @@ public class SubEngine {
     private final JSGlobals engineGlobals = new JSGlobals(), pageGlobals = new JSGlobals();
     private Browser browser;
     private BrowserView view;
+    private BrowserWindow debug;
     private boolean active = true;
 
     public SubEngine(BrowserWindow bw) {
@@ -28,7 +30,9 @@ public class SubEngine {
         this.view = new BrowserView(browser);
     }
 
-    void initListeners() {
+    void initListeners(PositronSwingListener sl) {
+        view.addMouseListener(sl);
+        view.addKeyListener(sl);
         browser.addConsoleListener(e -> bw.onConsoleMessage.accept(e.getMessage()));
         browser.addLoadListener(new LoadListener() {
             @Override
@@ -44,7 +48,8 @@ public class SubEngine {
             @Override
             public void onFinishLoadingFrame(FinishLoadingEvent event) {
                 pageGlobals.clear();
-                SubEngine.this.insertCss(bw.getParentApp().getGlobalCss());
+                if (!bw.getParentApp().getGlobalCss().isEmpty())
+                    SubEngine.this.insertCss(bw.getParentApp().getGlobalCss());
                 bw.onPageLoad.accept(event.getValidatedURL());
             }
 
@@ -68,6 +73,7 @@ public class SubEngine {
             @Override
             public void onScriptContextCreated(ScriptContextEvent event) {
                 bw.getParentApp().getDefaultGlobals().bind(SubEngine.this::isActive, event.getBrowser());
+                bw.getParentApp().getDepGlobals().bind(SubEngine.this::isActive, event.getBrowser());
                 engineGlobals.bind(SubEngine.this::isActive, event.getBrowser());
                 pageGlobals.bind(SubEngine.this::isActive, event.getBrowser());
             }
@@ -79,9 +85,28 @@ public class SubEngine {
         });
     }
 
+    public void showDebug() {
+        if (debug == null || !debug.getEngine().isActive()) {
+            IRectDimensional size = bw.getParentApp().getScreen().getSize();
+            debug = bw.getParentApp().createWindow((int)(0.5F * size.getWidth()), (int)(0.5F * size.getHeight()));
+            debug.getEngine().loadUrl(browser.getRemoteDebuggingURL());
+            debug.setTitle("Developer Tools");
+            debug.setVisible(true);
+        } else {
+            debug.setVisible(true);
+        }
+    }
+
+    public void hideDebug() {
+        if (debug != null)
+            debug.setVisible(false);
+    }
+
     public void cleanUp() {
         active = false;
         browser.dispose();
+        if (debug != null)
+            debug.close();
     }
 
     public boolean isActive() {

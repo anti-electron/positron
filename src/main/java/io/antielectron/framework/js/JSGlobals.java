@@ -68,6 +68,11 @@ public class JSGlobals {
             this.script = script;
         }
 
+        @Override
+        public String toString() {
+            return "ScriptExecution:\n" + script;
+        }
+
     }
 
 }

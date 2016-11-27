@@ -1,7 +1,7 @@
 package io.antielectron.framework.window;
 
 import io.antielectron.framework.app.App;
-import io.antielectron.framework.event.ClickEvent;
+import io.antielectron.framework.event.ContextMenuEvent;
 import io.antielectron.framework.event.ICancellable;
 import io.antielectron.framework.event.NullaryEventStream;
 import io.antielectron.framework.event.UnaryEventStream;
@@ -12,6 +12,8 @@ import io.antielectron.framework.geometry.IRectResizable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
 
 /**
@@ -30,11 +32,15 @@ public class BrowserWindow implements IRectResizable, IMovable {
     public final UnaryEventStream<String> onPageTitleUpdate = new UnaryEventStream<>();
     public final UnaryEventStream<String> onConsoleMessage = new UnaryEventStream<>();
     public final UnaryEventStream<ICancellable> onCloseButton = new UnaryEventStream<>();
+    public final NullaryEventStream onClosed = new NullaryEventStream();
     public final NullaryEventStream onFocus = new NullaryEventStream();
     public final NullaryEventStream onUnfocus = new NullaryEventStream();
     public final UnaryEventStream<IRectDimensional> onResize = new UnaryEventStream<>();
     public final UnaryEventStream<IPositional> onMove = new UnaryEventStream<>();
-    public final UnaryEventStream<ClickEvent> onContextMenu = new UnaryEventStream<>();
+    public final UnaryEventStream<MouseEvent> onClick = new UnaryEventStream<>();
+    public final UnaryEventStream<ContextMenuEvent> onContextMenu = new UnaryEventStream<>();
+    public final UnaryEventStream<KeyEvent> onKeyDown = new UnaryEventStream<>();
+    public final UnaryEventStream<KeyEvent> onKeyUp = new UnaryEventStream<>();
 
     public BrowserWindow(App parent, Dimension size, Consumer<BrowserWindow> destructFunction) {
         this.parent = parent;
@@ -53,8 +59,7 @@ public class BrowserWindow implements IRectResizable, IMovable {
         window.addWindowListener(swingListener);
         window.addFocusListener(swingListener);
         window.addComponentListener(swingListener);
-        window.addMouseListener(swingListener);
-        engine.initListeners();
+        engine.initListeners(swingListener);
     }
 
     public App getParentApp() {
@@ -153,15 +158,11 @@ public class BrowserWindow implements IRectResizable, IMovable {
         return this;
     }
 
-    public BrowserWindow onClosed(Consumer<BrowserWindow> handler) {
-        parent.onWindowClosed.always(handler);
-        return this;
-    }
-
     public void close() {
         window.dispose();
         engine.cleanUp();
         destructFunction.accept(this);
+        onClosed.accept();
     }
 
     public boolean isOpen() {

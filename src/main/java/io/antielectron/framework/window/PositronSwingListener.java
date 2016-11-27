@@ -1,6 +1,6 @@
 package io.antielectron.framework.window;
 
-import io.antielectron.framework.event.ClickEvent;
+import io.antielectron.framework.event.ContextMenuEvent;
 import io.antielectron.framework.event.DefaultCancellable;
 import io.antielectron.framework.event.ICancellable;
 
@@ -10,7 +10,7 @@ import java.awt.event.*;
  * TODO Document
  * @author Evan Geng
  */
-class PositronSwingListener implements WindowListener, FocusListener, ComponentListener, MouseListener {
+class PositronSwingListener implements WindowListener, FocusListener, ComponentListener, MouseListener, KeyListener {
 
     private final BrowserWindow bw;
 
@@ -89,10 +89,12 @@ class PositronSwingListener implements WindowListener, FocusListener, ComponentL
     @Override
     public void mouseClicked(MouseEvent e) {
         if (e.isPopupTrigger()) {
-            ClickEvent event = new ClickEvent(e.getX(), e.getY(), e.getButton());
+            ContextMenuEvent event = new ContextMenuEvent(e.getX(), e.getY(), e.getModifiersEx());
             bw.onContextMenu.accept(event);
             if (event.isCancelled())
                 e.consume();
+        } else {
+            bw.onClick.accept(e);
         }
     }
 
@@ -114,6 +116,21 @@ class PositronSwingListener implements WindowListener, FocusListener, ComponentL
     @Override
     public void mouseExited(MouseEvent e) {
         // NO-OP
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        // NO-OP
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        bw.onKeyDown.accept(e);
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        bw.onKeyUp.accept(e);
     }
 
 }

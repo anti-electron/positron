@@ -1,5 +1,6 @@
 package io.antielectron.framework.app;
 
+import com.teamdev.jxbrowser.chromium.BrowserPreferences;
 import com.teamdev.jxbrowser.chromium.internal.FileUtil;
 import io.antielectron.framework.event.IntCancellable;
 import io.antielectron.framework.event.NullaryEventStream;
@@ -58,6 +59,7 @@ public class App extends Application {
     public void start(Stage primaryStage) {
         Platform.setImplicitExit(false);
         primaryStage.close();
+        BrowserPreferences.setChromiumSwitches("--remote-debugging-port=9222");
         try (InputStream wcDir = App.class.getClassLoader().getResourceAsStream("WebContent")) {
             if (wcDir != null) {
                 BufferedReader dirReader = new BufferedReader(new InputStreamReader(wcDir));
@@ -124,6 +126,10 @@ public class App extends Application {
 
     public JSGlobals getDefaultGlobals() {
         return defaultGlobals;
+    }
+
+    public JSGlobals getDepGlobals() {
+        return fromDeps;
     }
 
     public String getGlobalCss() {
