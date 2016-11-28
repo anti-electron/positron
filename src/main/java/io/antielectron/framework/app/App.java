@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -60,21 +61,19 @@ public class App extends Application {
         Platform.setImplicitExit(false);
         primaryStage.close();
         BrowserPreferences.setChromiumSwitches("--remote-debugging-port=9222");
-        try (InputStream wcDir = App.class.getClassLoader().getResourceAsStream("WebContent")) {
-            if (wcDir != null) {
-                BufferedReader dirReader = new BufferedReader(new InputStreamReader(wcDir));
-                String fileName;
-                while ((fileName = dirReader.readLine()) != null) {
-                    File outFile = new File(webContentDir, fileName);
-                    outFile.getParentFile().mkdirs();
-                    try (
-                            InputStream in = App.class.getClassLoader().getResourceAsStream("WebContent/" + fileName);
-                            OutputStream out = new FileOutputStream(outFile)
-                    ) {
-                        int data;
-                        while ((data = in.read()) != -1)
-                            out.write(data);
-                    }
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try (BufferedReader dirReader = new BufferedReader(new InputStreamReader(cl.getResourceAsStream("positron-resources.index")))) {
+            String fileName;
+            while ((fileName = dirReader.readLine()) != null) {
+                File outFile = new File(webContentDir, fileName);
+                outFile.getParentFile().mkdirs();
+                try (
+                        InputStream in = cl.getResourceAsStream("WebContent/" + fileName);
+                        OutputStream out = new FileOutputStream(outFile)
+                ) {
+                    int data;
+                    while ((data = in.read()) != -1)
+                        out.write(data);
                 }
             }
         } catch (IOException e) {
